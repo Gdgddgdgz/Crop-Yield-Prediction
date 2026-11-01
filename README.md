@@ -8,11 +8,11 @@ The project uses **Python, Pandas, NumPy, Scikit-learn, Joblib, and Streamlit** 
 
 ## 🚀 Live Demo
 
-👉 https://crop-yield-prediction-bpvhbdqodkcypnfblovhba.streamlit.app/
+👉 https://crop-yield-prediction-zketoa5sfgplfuzsqr4eho.streamlit.app/
 
 ## 💻 GitHub Repository
 
-👉 https://github.com/amanawasthi-lang/Crop-Yield-Prediction
+👉 https://github.com/ak1796/Crop-Yield-Intelligence
 
 ---
 
