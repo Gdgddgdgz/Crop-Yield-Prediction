@@ -448,41 +448,73 @@ with tab_pred:
 # TAB 2: ANALYTICS
 # --------------------------------------------------
 with tab_analytics:
-    st.markdown("<h3 style='color: #0f172a; font-size: 18px; font-weight: 700; margin-bottom: 12px;'>📈 Historical Crop Performance</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #0f172a; font-size: 18px; font-weight: 700; margin-bottom: 6px;'>📈 Interactive Crop & Regional Analytics</h3>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #64748b; font-size: 13px; margin-bottom: 16px;'>Explore performance across crops, seasonal comparisons, and environmental impacts.</p>", unsafe_allow_html=True)
 
     if data_loaded and not df.empty:
+        # Interactive Controls
+        f1, f2 = st.columns([1, 1])
+        with f1:
+            crop_filter = st.selectbox(
+                "🔍 Select Crop to Inspect",
+                ["All Crops (Excl. Coconut Outlier)"] + sorted(df["Crop"].unique()),
+                index=0,
+                key="analytics_crop_select"
+            )
+        with f2:
+            season_filter = st.multiselect(
+                "☀️ Filter Seasons",
+                options=sorted(df["Season"].unique()),
+                default=sorted(df["Season"].unique()),
+                key="analytics_season_filter"
+            )
+
+        # Prepare filtered dataset
+        plot_df = df.copy()
+        if season_filter:
+            plot_df = plot_df[plot_df["Season"].isin(season_filter)]
+
+        if crop_filter == "All Crops (Excl. Coconut Outlier)":
+            plot_df = plot_df[plot_df["Crop"] != "Coconut"]
+            view_label = "All Crops (Excl. Coconut)"
+        else:
+            plot_df = plot_df[plot_df["Crop"] == crop_filter]
+            view_label = crop_filter
+
         g1, g2 = st.columns(2)
         with g1:
-            st.markdown("<b style='color:#0f172a;'>Top 10 High-Yielding Crops (Mean tonnes/hectare)</b>", unsafe_allow_html=True)
-            top_crops = df.groupby("Crop")["Yield"].mean().sort_values(ascending=False).head(10).reset_index()
+            st.markdown(f"<b style='color:#0f172a;'>Top Performing Crops by Average Yield (tonnes/ha)</b>", unsafe_allow_html=True)
+            # Exclude coconut from general top-crops bar chart because coconut is counted in thousands of nuts/ha
+            top_crops_df = df[df["Crop"] != "Coconut"].groupby("Crop")["Yield"].mean().sort_values(ascending=False).head(10).reset_index()
             fig1 = px.bar(
-                top_crops,
+                top_crops_df,
                 x="Yield",
                 y="Crop",
                 orientation="h",
                 color="Yield",
                 color_continuous_scale="Greens",
-                labels={"Yield": "Mean Yield (tonnes/hectare)"}
+                labels={"Yield": "Mean Yield (tonnes/ha)"}
             )
             fig1.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", height=320, margin=dict(l=10, r=10, t=10, b=10), yaxis={'categoryorder': 'total ascending'})
             st.plotly_chart(fig1, use_container_width=True)
 
         with g2:
-            st.markdown("<b style='color:#0f172a;'>Yield Distribution Across Seasons (tonnes/hectare)</b>", unsafe_allow_html=True)
-            season_clean = df[df["Yield"] < 25]
-            fig2 = px.box(
-                season_clean,
+            st.markdown(f"<b style='color:#0f172a;'>Average Yield by Cultivation Season: {view_label}</b>", unsafe_allow_html=True)
+            season_avg = plot_df.groupby("Season")["Yield"].mean().reset_index()
+            fig2 = px.bar(
+                season_avg,
                 x="Season",
                 y="Yield",
                 color="Season",
+                text_auto=".2f",
                 color_discrete_sequence=["#15803d", "#0284c7", "#f59e0b", "#7c3aed", "#ec4899", "#0d9488"],
-                labels={"Yield": "Yield (tonnes/hectare)"}
+                labels={"Yield": "Average Yield (tonnes/ha)"}
             )
             fig2.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", showlegend=False, height=320, margin=dict(l=10, r=10, t=10, b=10))
             st.plotly_chart(fig2, use_container_width=True)
 
-        st.markdown("<br><b style='color:#0f172a;'>Rainfall vs. Crop Yield Correlation</b>", unsafe_allow_html=True)
-        scatter_sample = df.sample(min(800, len(df)), random_state=42)
+        st.markdown(f"<br><b style='color:#0f172a;'>Rainfall vs. Yield Correlation: {view_label}</b>", unsafe_allow_html=True)
+        scatter_sample = plot_df.sample(min(600, len(plot_df)), random_state=42) if len(plot_df) > 0 else plot_df
         fig3 = px.scatter(
             scatter_sample,
             x="Annual_Rainfall",
@@ -491,8 +523,8 @@ with tab_analytics:
             color="Crop",
             hover_name="State",
             size_max=24,
-            opacity=0.7,
-            labels={"Annual_Rainfall": "Annual Rainfall (mm)", "Yield": "Yield (tonnes/hectare)"}
+            opacity=0.75,
+            labels={"Annual_Rainfall": "Annual Rainfall (mm)", "Yield": "Yield (tonnes/ha)"}
         )
         fig3.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", height=360, margin=dict(l=10, r=10, t=10, b=10))
         st.plotly_chart(fig3, use_container_width=True)
